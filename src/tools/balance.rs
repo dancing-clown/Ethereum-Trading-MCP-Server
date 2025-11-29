@@ -1,13 +1,11 @@
 use alloy::primitives::Address;
-use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
-use tracing::{debug, error, info};
+use tracing::{debug, info};
 
 use crate::error::Result;
 use crate::precision;
 use crate::rpc::RpcClient;
-use crate::tokens::TokenRegistry;
+// use crate::tokens::TokenRegistry;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BalanceRequest {
@@ -27,35 +25,32 @@ pub struct BalanceResponse {
 
 pub struct BalanceTool {
     rpc: RpcClient,
-    token_registry: TokenRegistry,
+    // token_registry: TokenRegistry,
 }
 
 impl BalanceTool {
     pub fn new(rpc: RpcClient) -> Self {
         BalanceTool {
             rpc,
-            token_registry: TokenRegistry::new(),
+            // token_registry: TokenRegistry::new(),
         }
     }
 
-    /// Validate Ethereum address format
+    /// 验证以太坊地址格式
     fn validate_address(addr_str: &str) -> Result<Address> {
         addr_str.parse::<Address>().map_err(|_| {
-            crate::error::EthereumError::InvalidAddress(format!(
-                "Invalid Ethereum address: {}",
-                addr_str
-            ))
+            crate::error::EthereumError::InvalidAddress(format!("无效的以太坊地址: {}", addr_str))
         })
     }
 
-    /// Get balance for ETH or ERC20 token
+    /// 获取 ETH 或 ERC20 代币的余额
     pub async fn get_balance(&self, request: BalanceRequest) -> Result<BalanceResponse> {
-        debug!("Getting balance for address: {}", request.address);
+        debug!("正在获取地址的余额: {}", request.address);
 
-        // Validate the wallet address
+        // 验证钱包地址
         let wallet_address = Self::validate_address(&request.address)?;
 
-        // Determine if querying ETH or ERC20
+        // 确定查询 ETH 还是 ERC20
         if let Some(token_addr_str) = &request.token_address {
             self.get_erc20_balance(wallet_address, token_addr_str).await
         } else {
@@ -63,9 +58,9 @@ impl BalanceTool {
         }
     }
 
-    /// Get ETH balance
+    /// 获取 ETH 余额
     async fn get_eth_balance(&self, address: Address) -> Result<BalanceResponse> {
-        info!("Fetching ETH balance for: {:?}", address);
+        info!("正在获取 ETH 余额: {:?}", address);
 
         let raw_balance = self.rpc.get_eth_balance(address).await?;
         let balance = precision::to_decimal(raw_balance, 18)?;
@@ -79,20 +74,20 @@ impl BalanceTool {
         })
     }
 
-    /// Get ERC20 token balance
+    /// 获取 ERC20 代币余额
     async fn get_erc20_balance(
         &self,
         wallet_address: Address,
         token_addr_str: &str,
     ) -> Result<BalanceResponse> {
         info!(
-            "Fetching ERC20 balance for: {:?} on token: {}",
+            "正在获取 ERC20 余额: {:?} 在代币: {}",
             wallet_address, token_addr_str
         );
 
         let token_address = Self::validate_address(token_addr_str)?;
 
-        // Get token decimals and symbol in parallel
+        // 并行获取代币小数位数和符号
         let decimals = self.rpc.get_token_decimals(token_address).await?;
         let symbol = self
             .rpc
@@ -100,13 +95,13 @@ impl BalanceTool {
             .await
             .unwrap_or_else(|_| "UNKNOWN".to_string());
 
-        // Get token balance
+        // 获取代币余额
         let raw_balance = self
             .rpc
             .get_token_balance(token_address, wallet_address)
             .await?;
 
-        // Convert to human-readable format
+        // 转换为人类可读的格式
         let balance = precision::to_decimal(raw_balance, decimals)?;
 
         Ok(BalanceResponse {

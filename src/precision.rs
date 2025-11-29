@@ -3,21 +3,21 @@ use rust_decimal::prelude::*;
 
 use crate::error::{EthereumError, Result};
 
-/// Convert raw token amount (in smallest units) to human-readable decimal format
+/// 将原始代币金额（最小单位）转换为人类可读的十进制格式
 ///
-/// # Arguments
-/// * `raw_amount` - The raw amount in the smallest unit (wei for ETH, 10^decimals for tokens)
-/// * `decimals` - The number of decimal places for the token
+/// # 参数
+/// * `raw_amount` - 最小单位的原始金额（ETH 的 wei，代币的 10^decimals）
+/// * `decimals` - 代币的小数位数
 ///
-/// # Example
+/// # 示例
 /// ```ignore
-/// let raw = U256::from(1_000_000_000_000_000_000u64); // 1 wei (but for token with 18 decimals)
-/// let decimal = to_decimal(raw, 18)?; // Returns Decimal::from(1)
+/// let raw = U256::from(1_000_000_000_000_000_000u64); // 1 wei（但对于 18 位小数的代币）
+/// let decimal = to_decimal(raw, 18)?; // 返回 Decimal::from(1)
 /// ```
 pub fn to_decimal(raw_amount: U256, decimals: u8) -> Result<Decimal> {
     let mut divisor = Decimal::from(1);
     for _ in 0..decimals {
-        divisor = divisor * Decimal::from(10);
+        divisor *= Decimal::from(10);
     }
 
     let amount_str = raw_amount.to_string();
@@ -29,42 +29,42 @@ pub fn to_decimal(raw_amount: U256, decimals: u8) -> Result<Decimal> {
         .ok_or_else(|| EthereumError::PrecisionError("Division overflow".to_string()))
 }
 
-/// Convert decimal amount to raw token amount (in smallest units)
+/// 将十进制金额转换为原始代币金额（最小单位）
 ///
-/// # Arguments
-/// * `decimal_amount` - The human-readable decimal amount
-/// * `decimals` - The number of decimal places for the token
+/// # 参数
+/// * `decimal_amount` - 人类可读的十进制金额
+/// * `decimals` - 代币的小数位数
 ///
-/// # Example
+/// # 示例
 /// ```ignore
 /// let decimal = Decimal::from(1);
-/// let raw = from_decimal(decimal, 18)?; // Returns U256 representing 1e18
+/// let raw = from_decimal(decimal, 18)?; // 返回代表 1e18 的 U256
 /// ```
 pub fn from_decimal(decimal_amount: Decimal, decimals: u8) -> Result<U256> {
     let mut multiplier = Decimal::from(1);
     for _ in 0..decimals {
-        multiplier = multiplier * Decimal::from(10);
+        multiplier *= Decimal::from(10);
     }
 
     let raw_decimal = decimal_amount
         .checked_mul(multiplier)
         .ok_or_else(|| EthereumError::PrecisionError("Multiplication overflow".to_string()))?;
 
-    // Convert to u128 if it fits, otherwise to string and parse as U256
+    // 如果适合，转换为 u128，否则转换为字符串并解析为 U256
     let raw_u128 = raw_decimal
         .to_u128()
-        .ok_or_else(|| EthereumError::PrecisionError("Amount too large".to_string()))?;
+        .ok_or_else(|| EthereumError::PrecisionError("金额过大".to_string()))?;
 
     Ok(U256::from(raw_u128))
 }
 
-/// Calculate minimum output with slippage tolerance
+/// 计算带有滑点容差的最小输出
 ///
-/// # Arguments
-/// * `expected_output` - The expected output amount
-/// * `slippage_percentage` - The slippage tolerance as a percentage (e.g., 0.5 for 0.5%)
+/// # 参数
+/// * `expected_output` - 预期输出金额
+/// * `slippage_percentage` - 滑点容差百分比（例如 0.5 表示 0.5%）
 ///
-/// # Example
+/// # 示例
 /// ```ignore
 /// let min_output = calculate_min_output_with_slippage(Decimal::from(100), Decimal::from_str("0.5")?)?;
 /// // min_output = 99.5 (100 - 0.5%)
@@ -86,7 +86,7 @@ pub fn calculate_min_output_with_slippage(
         .ok_or_else(|| EthereumError::PrecisionError("Multiplication overflow".to_string()))
 }
 
-/// Convert U256 to decimal with proper formatting
+/// 将 U256 转换为十进制，并进行适当的格式化
 pub fn u256_to_decimal(value: U256, decimals: u8) -> Result<String> {
     let decimal = to_decimal(value, decimals)?;
     Ok(decimal.normalize().to_string())
@@ -99,6 +99,7 @@ mod tests {
     #[test]
     fn test_to_decimal_eth() {
         // 1 ETH in wei (10^18)
+        // 1 ETH（wei 中 10^18）
         let raw = U256::from(1_000_000_000_000_000_000u64);
         let result = to_decimal(raw, 18).unwrap();
         assert_eq!(result, Decimal::from(1));
@@ -106,6 +107,7 @@ mod tests {
 
     #[test]
     fn test_to_decimal_usdt() {
+        // 1 USDT (10^6)
         // 1 USDT (10^6)
         let raw = U256::from(1_000_000u64);
         let result = to_decimal(raw, 6).unwrap();
@@ -140,7 +142,7 @@ mod tests {
         let original = Decimal::from_str("123.456").unwrap();
         let raw = from_decimal(original, 18).unwrap();
         let converted = to_decimal(raw, 18).unwrap();
-        // Allow for small rounding errors
+        // 允许小的舍入错误
         assert!((original - converted).abs() < Decimal::from_str("0.000000001").unwrap());
     }
 }

@@ -10,23 +10,24 @@ use crate::tokens::TokenRegistry;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PriceRequest {
-    pub token_identifier: String, // Can be symbol or contract address
+    // 代币名称或者代币地址
+    pub token_identifier: String, // 可以是符号或合约地址
+    // 报价货币，默认是 USD
+    pub quote_currency: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PriceResponse {
-    pub token: String,
-    pub price_usd: String,
-    pub price_eth: String,
+    pub unit: String,
+    pub price: String,
     pub timestamp: u64,
-    pub data_source: String,
 }
 
 pub struct PriceTool {
     _rpc: RpcClient,
     token_registry: TokenRegistry,
-    // In production, would use CoinGecko/CoinMarketCap API
-    // For now, we'll use a hardcoded price oracle
+    // 在生产环境中，将使用 CoinGecko/CoinMarketCap API
+    // 目前，我们将使用硬编码的价格预言机
     price_cache: HashMap<String, (Decimal, Decimal)>,
 }
 
@@ -34,8 +35,8 @@ impl PriceTool {
     pub fn new(rpc: RpcClient) -> Self {
         let mut price_cache = HashMap::new();
 
-        // Mock price data for common tokens (in production, fetch from Uniswap pools or APIs)
-        // Format: (USD price, ETH price)
+        // 常见代币的模拟价格数据（在生产环境中，从 Uniswap 池或 API 获取）
+        // 格式: (USD 价格, ETH 价格)
         price_cache.insert(
             "ETH".to_string(),
             (Decimal::from_str_exact("2500").unwrap(), Decimal::from(1)),
@@ -69,47 +70,45 @@ impl PriceTool {
         }
     }
 
-    /// Get token price information
+    /// 获取代币价格信息
     pub async fn get_price(&self, request: PriceRequest) -> Result<PriceResponse> {
-        debug!("Getting price for token: {}", request.token_identifier);
+        debug!("正在获取代币价格: {}", request.token_identifier);
 
         let token_identifier = &request.token_identifier.to_uppercase();
 
-        // Try to resolve symbol to address or vice versa
+        // 尝试将符号解析为地址或反之
         let (symbol, _address) = if let Ok(addr) = token_identifier.parse::<Address>() {
-            // It's an address
+            // 是一个地址
             let symbol = self
                 .token_registry
                 .address_to_symbol(addr)
                 .unwrap_or_else(|| "UNKNOWN".to_string());
             (symbol, Some(addr))
         } else {
-            // It's a symbol
+            // 是一个符号
             let addr = self
                 .token_registry
                 .symbol_to_address(token_identifier)
                 .ok_or_else(|| {
-                    EthereumError::TokenNotFound(format!("Token not found: {}", token_identifier))
+                    EthereumError::TokenNotFound(format!("代币不存在: {}", token_identifier))
                 })?;
             (token_identifier.clone(), Some(addr))
         };
 
-        // Get price from cache (in production, would fetch from Uniswap or price API)
-        let (price_usd, price_eth) = self.price_cache.get(&symbol).copied().ok_or_else(|| {
-            EthereumError::PriceOracleError(format!("Price data not available for: {}", symbol))
+        // 从缓存获取价格（在生产环境中，将从 Uniswap 或价格 API 获取）
+        let (price_usd, _) = self.price_cache.get(&symbol).copied().ok_or_else(|| {
+            EthereumError::PriceOracleError(format!("价格数据不可用: {}", symbol))
         })?;
 
-        info!("Retrieved price for {}: ${}", symbol, price_usd);
+        info!("获取 {} 的价格: ${}", symbol, price_usd);
 
         Ok(PriceResponse {
-            token: symbol,
-            price_usd: price_usd.normalize().to_string(),
-            price_eth: price_eth.normalize().to_string(),
+            unit: symbol,
+            price: price_usd.normalize().to_string(),
             timestamp: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_secs(),
-            data_source: "Mock Oracle".to_string(),
         })
     }
 }
@@ -121,11 +120,9 @@ mod tests {
     #[test]
     fn test_price_response_serialization() {
         let response = PriceResponse {
-            token: "ETH".to_string(),
-            price_usd: "2500".to_string(),
-            price_eth: "1".to_string(),
+            unit: "ETH".to_string(),
+            price: "2500".to_string(),
             timestamp: 1735689600,
-            data_source: "Mock Oracle".to_string(),
         };
 
         let json = serde_json::to_string(&response).unwrap();
@@ -137,6 +134,7 @@ mod tests {
     fn test_token_symbol_normalization() {
         let request = PriceRequest {
             token_identifier: "eth".to_string(),
+            quote_currency: None,
         };
         assert_eq!(request.token_identifier.to_uppercase(), "ETH");
     }

@@ -11,10 +11,10 @@ use crate::tools::balance::BalanceTool;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SwapRequest {
-    pub from_token: String, // Symbol or address
-    pub to_token: String,   // Symbol or address
-    pub amount: String,     // Amount in human-readable format
-    pub slippage: Decimal,  // Slippage tolerance in percentage (e.g., 0.5 for 0.5%)
+    pub from_token: String, // 符号或地址
+    pub to_token: String,   // 符号或地址
+    pub amount: String,     // 人类可读格式的金额
+    pub slippage: Decimal,  // 滑点容差百分比（例如 0.5 表示 0.5%）
     pub wallet_address: String,
 }
 
@@ -47,39 +47,37 @@ impl SwapTool {
         }
     }
 
-    /// Validate and resolve token identifier to address
+    /// 验证并将代币标识符解析为地址
     fn resolve_token(&self, identifier: &str) -> Result<Address> {
         let identifier_upper = identifier.to_uppercase();
 
-        // Try parsing as address first
+        // 首先尝试解析为地址
         if let Ok(addr) = identifier_upper.parse::<Address>() {
             return Ok(addr);
         }
 
-        // Try looking up as symbol
+        // 尝试作为符号查找
         self.token_registry
             .symbol_to_address(&identifier_upper)
-            .ok_or_else(|| {
-                EthereumError::InvalidTokenPair(format!("Cannot resolve token: {}", identifier))
-            })
+            .ok_or_else(|| EthereumError::InvalidTokenPair(format!("无法解析代币: {}", identifier)))
     }
 
-    /// Simulate a token swap
+    /// 模拟代币交换
     pub async fn simulate_swap(&self, request: SwapRequest) -> Result<SwapResponse> {
         debug!(
-            "Simulating swap: {} {} -> {}",
+            "模拟交换: {} {} -> {}",
             request.amount, request.from_token, request.to_token
         );
 
-        // Validate addresses
+        // 验证地址
         let from_token = self.resolve_token(&request.from_token)?;
-        let to_token = self.resolve_token(&request.to_token)?;
+        // let to_token = self.resolve_token(&request.to_token)?;
         let wallet_address = request
             .wallet_address
             .parse::<Address>()
-            .map_err(|_| EthereumError::InvalidAddress("Invalid wallet address".to_string()))?;
+            .map_err(|_| EthereumError::InvalidAddress("无效的钱包地址".to_string()))?;
 
-        // Validate amount
+        // 验证金额
         if request.amount.parse::<Decimal>().is_err() {
             return Ok(SwapResponse {
                 from_token: request.from_token,
@@ -90,15 +88,15 @@ impl SwapTool {
                 gas_cost_eth: "0".to_string(),
                 slippage_percentage: request.slippage.to_string(),
                 simulation_success: false,
-                error: Some("Invalid amount format".to_string()),
+                error: Some("无效的金额格式".to_string()),
             });
         }
 
-        // Check wallet balance
+        // 检查钱包余额
         match self
             .balance_tool
             .as_ref()
-            .ok_or_else(|| EthereumError::Unknown("Balance tool unavailable".to_string()))
+            .ok_or_else(|| EthereumError::Unknown("余额工具不可用".to_string()))
             .and_then(|bt| {
                 futures::executor::block_on(async {
                     bt.get_balance(crate::tools::balance::BalanceRequest {
@@ -129,33 +127,33 @@ impl SwapTool {
                         slippage_percentage: request.slippage.to_string(),
                         simulation_success: false,
                         error: Some(format!(
-                            "Insufficient balance: {} available, {} required",
+                            "余额不足: {} 可用, {} 需要",
                             wallet_balance, input_amount
                         )),
                     });
                 }
             }
             Err(e) => {
-                warn!("Failed to check balance: {:?}", e);
-                // Continue with simulation even if balance check fails
+                warn!("检查余额失败: {:?}", e);
+                // 即使余额检查失败，也继续进行模拟
             }
         }
 
-        // Mock Uniswap swap simulation
-        // In production, this would:
-        // 1. Build the swap transaction
-        // 2. Call eth_call to simulate
-        // 3. Decode the return values
-        // 4. Estimate gas
+        // 模拟 Uniswap 交换
+        // 在生产环境中，这将:
+        // 1. 构建交换交易
+        // 2. 调用 eth_call 进行模拟
+        // 3. 解码返回值
+        // 4. 估算 Gas
 
         let input_amount = request.amount.parse::<Decimal>().unwrap_or(Decimal::ZERO);
 
-        // Mock output calculation (simplified: 1-2% better rate due to liquidity)
+        // 模拟输出计算（简化: 由于流动性，速率提高 1-2%）
         let estimated_output = input_amount * Decimal::from_str_exact("0.99").unwrap();
         let min_output =
             precision::calculate_min_output_with_slippage(estimated_output, request.slippage)?;
 
-        // Mock gas estimation: ~150k gas units
+        // 模拟 Gas 估算: ~150k gas 单位
         let gas_price = self.rpc.get_gas_price().await.unwrap_or(20_000_000_000u128);
 
         let estimated_gas = 150_000u64;
@@ -164,7 +162,7 @@ impl SwapTool {
         let gas_cost_eth = precision::to_decimal(gas_cost_wei, 18)?;
 
         info!(
-            "Swap simulation complete: {} {} -> {} (output: {})",
+            "交换模拟完成: {} {} -> {} (输出: {})",
             input_amount, request.from_token, request.to_token, estimated_output
         );
 

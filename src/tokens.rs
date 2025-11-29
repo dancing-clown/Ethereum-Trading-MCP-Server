@@ -1,21 +1,21 @@
 use alloy::primitives::Address;
 use std::collections::HashMap;
 
-/// Common token definitions and mappings
+/// 常见代币定义和映射
 pub struct TokenRegistry {
     symbol_to_address: HashMap<String, Address>,
     address_to_symbol: HashMap<Address, String>,
 }
 
 impl TokenRegistry {
-    /// Create a new token registry with common mainnet tokens
+    /// 创建一个包含常见主网代币的新代币注册表
     pub fn new() -> Self {
         let mut symbol_to_address = HashMap::new();
         let mut address_to_symbol = HashMap::new();
 
-        // Ethereum mainnet token mappings
+        // 以太坊主网代币映射
         let tokens = vec![
-            // Mainnet tokens
+            // 主网代币
             (
                 "ETH".to_string(),
                 "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE".to_string(),
@@ -67,23 +67,23 @@ impl TokenRegistry {
         }
     }
 
-    /// Get address from symbol
+    /// 从符号获取地址
     pub fn symbol_to_address(&self, symbol: &str) -> Option<Address> {
         self.symbol_to_address.get(&symbol.to_uppercase()).copied()
     }
 
-    /// Get symbol from address
+    /// 从地址获取符号
     pub fn address_to_symbol(&self, address: Address) -> Option<String> {
         self.address_to_symbol.get(&address).cloned()
     }
 
-    /// Register a new token
+    /// 注册一个新代币
     pub fn register(&mut self, symbol: String, address: Address) {
         self.symbol_to_address.insert(symbol.clone(), address);
         self.address_to_symbol.insert(address, symbol);
     }
 
-    /// Get all registered symbols
+    /// 获取所有已注册的符号
     pub fn symbols(&self) -> Vec<String> {
         self.symbol_to_address.keys().cloned().collect()
     }

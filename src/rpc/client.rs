@@ -6,7 +6,6 @@ use tracing::{debug, error};
 
 use crate::error::{EthereumError, Result};
 
-/// ERC20 contract interface using alloy sol! macro
 sol! {
     #[allow(missing_docs)]
     #[sol(rpc)]
@@ -23,7 +22,6 @@ sol! {
     }
 }
 
-/// Uniswap V2 Router interface
 sol! {
     #[allow(missing_docs)]
     #[sol(rpc)]
@@ -52,7 +50,6 @@ sol! {
     }
 }
 
-/// WETH9 contract interface
 sol! {
     #[allow(missing_docs)]
     #[sol(rpc)]
@@ -84,7 +81,7 @@ type HttpProvider = alloy::providers::fillers::FillProvider<
     alloy::network::Ethereum,
 >;
 
-/// RPC Client for Ethereum interactions
+/// 以太坊 RPC 客户端
 #[derive(Clone)]
 pub struct RpcClient {
     inner: Arc<RpcClientInner>,
@@ -95,14 +92,14 @@ struct RpcClientInner {
 }
 
 impl RpcClient {
-    /// Create a new RPC client
+    /// 创建一个新的 RPC 客户端
     pub async fn new(rpc_url: String) -> Result<Self> {
-        // Validate URL format
+        // 验证 URL 格式
         rpc_url
             .parse::<url::Url>()
-            .map_err(|_| EthereumError::ConfigError("Invalid RPC URL format".to_string()))?;
+            .map_err(|_| EthereumError::ConfigError("无效的 RPC URL 格式".to_string()))?;
 
-        debug!("Connected to RPC: {}", rpc_url);
+        debug!("已连接到 RPC: {}", rpc_url);
 
         Ok(RpcClient {
             inner: Arc::new(RpcClientInner {
@@ -111,39 +108,39 @@ impl RpcClient {
         })
     }
 
-    /// Helper to get provider for each operation
+    /// 为每个操作获取提供程序的帮助函数
     fn get_provider(&self) -> Result<HttpProvider> {
         let url = self
             .inner
             .provider_url
             .parse()
-            .map_err(|_| EthereumError::ConfigError("Invalid RPC URL".to_string()))?;
+            .map_err(|_| EthereumError::ConfigError("无效的 RPC URL".to_string()))?;
 
         Ok(ProviderBuilder::new()
             .with_recommended_fillers()
             .on_http(url))
     }
 
-    /// Get ETH balance for an address
+    /// 获取地址的 ETH 余额
     pub async fn get_eth_balance(&self, address: Address) -> Result<U256> {
-        debug!("Getting ETH balance for: {:?}", address);
+        debug!("正在获取 ETH 余额: {:?}", address);
 
         let provider = self.get_provider()?;
 
         provider.get_balance(address).await.map_err(|e| {
-            error!("Failed to get ETH balance: {}", e);
-            EthereumError::RpcError(format!("Failed to get balance: {}", e))
+            error!("获取 ETH 余额失败: {}", e);
+            EthereumError::RpcError(format!("获取余额失败: {}", e))
         })
     }
 
-    /// Get ERC20 token balance for an address
+    /// 获取地址的 ERC20 代币余额
     pub async fn get_token_balance(
         &self,
         token_address: Address,
         account_address: Address,
     ) -> Result<U256> {
         debug!(
-            "Getting token balance for: {:?} on token: {:?}",
+            "正在获取代币余额: {:?} 在代币: {:?}",
             account_address, token_address
         );
 
@@ -156,80 +153,77 @@ impl RpcClient {
             .await
             .map(|r| r._0)
             .map_err(|e| {
-                error!(
-                    "Failed to get token balance: {} (token: {:?})",
-                    e, token_address
-                );
-                EthereumError::RpcError(format!("Failed to get token balance: {}", e))
+                error!("获取代币余额失败: {} (代币: {:?})", e, token_address);
+                EthereumError::RpcError(format!("获取代币余额失败: {}", e))
             })
     }
 
-    /// Get ERC20 token decimals
+    /// 获取 ERC20 代币小数位数
     pub async fn get_token_decimals(&self, token_address: Address) -> Result<u8> {
-        debug!("Getting decimals for token: {:?}", token_address);
+        debug!("正在获取代币小数位数: {:?}", token_address);
 
         let provider = self.get_provider()?;
         let contract = IERC20::new(token_address, provider);
 
         contract.decimals().call().await.map(|r| r._0).map_err(|e| {
-            error!("Failed to get token decimals: {}", e);
-            EthereumError::RpcError(format!("Failed to get token decimals: {}", e))
+            error!("获取代币小数位数失败: {}", e);
+            EthereumError::RpcError(format!("获取代币小数位数失败: {}", e))
         })
     }
 
-    /// Get ERC20 token symbol
+    /// 获取 ERC20 代币符号
     pub async fn get_token_symbol(&self, token_address: Address) -> Result<String> {
-        debug!("Getting symbol for token: {:?}", token_address);
+        debug!("正在获取代币符号: {:?}", token_address);
 
         let provider = self.get_provider()?;
         let contract = IERC20::new(token_address, provider);
 
         contract.symbol().call().await.map(|r| r._0).map_err(|e| {
-            error!("Failed to get token symbol: {}", e);
-            EthereumError::RpcError(format!("Failed to get token symbol: {}", e))
+            error!("获取代币符号失败: {}", e);
+            EthereumError::RpcError(format!("获取代币符号失败: {}", e))
         })
     }
 
-    /// Estimate gas for a transaction
+    /// 估算交易的 Gas
     pub async fn estimate_gas(&self, tx: alloy::rpc::types::TransactionRequest) -> Result<u64> {
-        debug!("Estimating gas for transaction");
+        debug!("正在估算交易的 Gas");
 
         let provider = self.get_provider()?;
 
         provider.estimate_gas(&tx).await.map_err(|e| {
-            error!("Failed to estimate gas: {}", e);
-            EthereumError::GasEstimationFailed(format!("Gas estimation failed: {}", e))
+            error!("Gas 估算失败: {}", e);
+            EthereumError::GasEstimationFailed(format!("Gas 估算失败: {}", e))
         })
     }
 
-    /// Get current gas price
+    /// 获取当前 Gas 价格
     pub async fn get_gas_price(&self) -> Result<u128> {
-        debug!("Getting current gas price");
+        debug!("正在获取当前 Gas 价格");
 
         let provider = self.get_provider()?;
 
         provider.get_gas_price().await.map_err(|e| {
-            error!("Failed to get gas price: {}", e);
-            EthereumError::RpcError(format!("Failed to get gas price: {}", e))
+            error!("获取 Gas 价格失败: {}", e);
+            EthereumError::RpcError(format!("获取 Gas 价格失败: {}", e))
         })
     }
 
-    /// Call a contract function (read-only)
+    /// 调用合约函数（只读）
     pub async fn call_contract(
         &self,
         tx: alloy::rpc::types::TransactionRequest,
     ) -> Result<alloy::primitives::Bytes> {
-        debug!("Calling contract function");
+        debug!("正在调用合约函数");
 
         let provider = self.get_provider()?;
 
         provider.call(&tx).await.map_err(|e| {
-            error!("Failed to call contract: {}", e);
-            EthereumError::RpcError(format!("Failed to call contract: {}", e))
+            error!("调用合约失败: {}", e);
+            EthereumError::RpcError(format!("调用合约失败: {}", e))
         })
     }
 
-    /// Get RPC URL
+    /// 获取 RPC URL
     pub fn rpc_url(&self) -> &str {
         &self.inner.provider_url
     }
@@ -237,12 +231,11 @@ impl RpcClient {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
     fn test_rpc_client_creation() {
-        // Just test that we can call the constructor path
-        // We won't actually connect to a real RPC in tests
+        // 仅测试我们可以调用构造函数路径
+        // 我们不会在测试中实际连接到真实的 RPC
         let url = "https://eth.llamarpc.com";
         assert!(!url.is_empty());
     }

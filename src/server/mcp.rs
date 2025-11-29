@@ -10,7 +10,7 @@ use crate::tools::balance::{BalanceRequest, BalanceTool};
 use crate::tools::price::{PriceRequest, PriceTool};
 use crate::tools::swap::{SwapRequest, SwapTool};
 
-/// JSON-RPC 2.0 Request format
+/// JSON-RPC 2.0 请求格式
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JsonRpcRequest {
     pub jsonrpc: String,
@@ -19,7 +19,7 @@ pub struct JsonRpcRequest {
     pub id: Value,
 }
 
-/// JSON-RPC 2.0 Response format
+/// JSON-RPC 2.0 响应格式
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JsonRpcResponse {
     pub jsonrpc: String,
@@ -38,7 +38,7 @@ pub struct JsonRpcError {
     pub data: Option<Value>,
 }
 
-/// MCP Tool Definition
+/// MCP 工具定义
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolDefinition {
     pub name: String,
@@ -46,7 +46,7 @@ pub struct ToolDefinition {
     pub input_schema: Value,
 }
 
-/// MCP Server for Ethereum trading tools
+/// 以太坊交易工具的 MCP 服务器
 pub struct McpServer {
     config: Config,
     rpc_client: Arc<RwLock<Option<RpcClient>>>,
@@ -66,12 +66,9 @@ impl McpServer {
         }
     }
 
-    /// Initialize the server and connect to RPC
+    /// 初始化服务器并连接到 RPC
     pub async fn initialize(&self) -> crate::error::Result<()> {
-        info!(
-            "Initializing MCP server with RPC URL: {}",
-            self.config.rpc_url
-        );
+        info!("使用 RPC URL 初始化 MCP 服务器: {}", self.config.rpc_url);
 
         let rpc = RpcClient::new(self.config.rpc_url.clone()).await?;
 
@@ -80,11 +77,11 @@ impl McpServer {
         *self.price_tool.write().await = Some(PriceTool::new(rpc.clone()));
         *self.swap_tool.write().await = Some(SwapTool::new(rpc));
 
-        info!("MCP server initialized successfully");
+        info!("MCP 服务器初始化成功");
         Ok(())
     }
 
-    /// Get tool definitions (MCP spec)
+    /// 获取工具定义（MCP 规范）
     pub async fn get_tool_definitions(&self) -> Vec<ToolDefinition> {
         vec![
             ToolDefinition {
@@ -153,10 +150,10 @@ impl McpServer {
         ]
     }
 
-    /// Handle a JSON-RPC request
+    /// 处理一个 JSON-RPC 请求
     pub async fn handle_request(&self, request: JsonRpcRequest) -> JsonRpcResponse {
         debug!(
-            "Handling MCP request: {} with params: {:?}",
+            "处理 MCP 请求: {} 带参数: {:?}",
             request.method, request.params
         );
 
@@ -189,11 +186,11 @@ impl McpServer {
 
     async fn handle_tools_list(&self) -> Result<Value, JsonRpcError> {
         let tools = self.get_tool_definitions().await;
-        Ok(serde_json::to_value(&tools).map_err(|e| JsonRpcError {
+        serde_json::to_value(&tools).map_err(|e| JsonRpcError {
             code: -32603,
             message: format!("Internal error: {}", e),
             data: None,
-        })?)
+        })
     }
 
     async fn handle_tool_call(&self, params: &Value) -> Result<Value, JsonRpcError> {

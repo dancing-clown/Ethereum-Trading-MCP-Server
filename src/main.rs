@@ -8,38 +8,38 @@ use tracing::{error, info};
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
-    // Initialize tracing
+    // 初始化追踪
     tracing_subscriber::fmt()
         .with_target(false)
         .with_thread_ids(false)
         .with_line_number(true)
         .init();
 
-    info!("Starting Ethereum Trading MCP Server...");
+    info!("启动以太坊交易 MCP 服务器...");
 
-    // Load configuration from environment
+    // 从环境加载配置
     let config = Config::from_env().unwrap_or_else(|_| {
-        info!("Using default configuration (RPC_URL environment variable not found)");
+        info!("使用默认配置（未找到 RPC_URL 环境变量）");
         Config::from_url("https://eth.llamarpc.com".to_string())
     });
 
-    // Create and initialize MCP server
+    // 创建并初始化 MCP 服务器
     let mcp_server = Arc::new(McpServer::new(config));
 
     match mcp_server.initialize().await {
-        Ok(_) => info!("MCP server initialized successfully"),
+        Ok(_) => info!("MCP 服务器初始化成功"),
         Err(e) => {
-            error!("Failed to initialize MCP server: {}", e);
+            error!("MCP 服务器初始化失败: {}", e);
             return Err(e.into());
         }
     }
 
-    // Start TCP server
+    // 启动 TCP 服务器
     let addr: SocketAddr = "127.0.0.1:8080".parse()?;
     let listener = TcpListener::bind(&addr).await?;
 
-    info!("MCP server listening on http://{}", addr);
-    info!("Available tools: get_balance, get_token_price, swap_tokens");
+    info!("MCP 服务器监听 http://{}", addr);
+    info!("可用工具: get_balance, get_token_price, swap_tokens");
 
     loop {
         let (socket, peer_addr) = listener.accept().await?;
@@ -69,13 +69,10 @@ async fn handle_connection(
             continue;
         }
 
-        // Parse JSON-RPC request
+        // 解析 JSON-RPC 请求
         match serde_json::from_str::<ethereum_trading_mcp_server::server::JsonRpcRequest>(trimmed) {
             Ok(request) => {
-                info!(
-                    "Received request: {} (id: {:?})",
-                    request.method, request.id
-                );
+                info!("收到请求: {} (id: {:?})", request.method, request.id);
 
                 let response = mcp_server.handle_request(request).await;
 
@@ -85,7 +82,7 @@ async fn handle_connection(
                 writer.flush().await?;
             }
             Err(e) => {
-                error!("Failed to parse JSON-RPC request: {}", e);
+                error!("无法解析 JSON-RPC 请求: {}", e);
 
                 let error_response = json!({
                     "jsonrpc": "2.0",

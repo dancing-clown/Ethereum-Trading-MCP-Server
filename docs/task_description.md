@@ -22,12 +22,12 @@
 
 2. get_token_price - 代币价格查询
 输入
-代币标识：合约地址（如 USDT 是 0xdAC17F958D2ee523a2206206994597C13D831ec7）或符号（如 ETH/USDT）。
+代币标识：代币地址或符号（如USDT， DAI），可选项单位(USD 或者 ETH，默认为USD)。
 输出
-价格数据：需包含「USD 价格、ETH 价格、更新时间、数据源说明」；
-示例：{ "token": "USDT", "price_usd": 1.002, "price_eth": 0.00058, "timestamp": 1735689600 }。
+价格数据：需包含「价格单位(USD或ETH)、更新时间」；
+示例：{ "price": "0.9998", "unit": "USD", "timestamp": 1735689600 }。
 实现要求
-价格来源：可对接 Uniswap 池子（通过储备计算）、CoinGecko/CoinMarketCap API，或以太坊 RPC 原生报价；
+价格来源：可对接 Uniswap 池子（通过储备计算）、或以太坊 RPC 原生报价,；
 符号映射：需维护「代币符号 ↔ 合约地址」的基础映射（如 USDT → 上述合约地址）；
 单位对齐：价格精度需与代币 decimals 匹配（避免 1 USDT 被算成 1e6 美元）。
 3. swap_tokens - Uniswap 代币兑换模拟（核心难点）

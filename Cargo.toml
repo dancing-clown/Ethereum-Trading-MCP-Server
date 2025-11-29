@@ -7,6 +7,10 @@ edition = "2021"
 name = "ethereum-mcp-server"
 path = "src/main.rs"
 
+[[bin]]
+name = "mcp-client"
+path = "src/bin/client.rs"
+
 [dependencies]
 # Core async runtime
 tokio = { version = "1.40", features = ["full"] }
