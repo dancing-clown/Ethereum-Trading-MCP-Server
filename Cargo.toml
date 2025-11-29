@@ -1,0 +1,55 @@
+[package]
+name = "ethereum-trading-mcp-server"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "ethereum-mcp-server"
+path = "src/main.rs"
+
+[dependencies]
+# Core async runtime
+tokio = { version = "1.40", features = ["full"] }
+
+# Alloy for Ethereum interactions
+alloy = { version = "0.6", features = ["full", "signer-keystore"] }
+alloy-primitives = { version = "0.8", features = ["serde"] }
+alloy-consensus = { version = "0.8" }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Precision arithmetic for crypto
+rust_decimal = { version = "1.35", features = ["serde"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "ansi"] }
+
+# Error handling
+eyre = "0.6"
+thiserror = "1.0"
+
+# Configuration
+dotenv = "0.15"
+
+# HTTP client for price APIs (if needed)
+reqwest = { version = "0.12", features = ["json"] }
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# URL parsing
+url = "2.5"
+
+# Futures for block_on
+futures = "0.3"
+
+[dev-dependencies]
+mockito = "1.6"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
