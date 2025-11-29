@@ -16,7 +16,9 @@
 
 ### 前置条件
 
-- **Rust 1.70+** ([安装](https://rustup.rs/))
+- **Rust 1.91.1+** ([安装](https://rustup.rs/))
+- **rustfmt** (Rust 格式化工具)
+- **cargo clippy** (Rust 静态分析工具)
 - **以太坊 RPC 端点** (免费选项: [llamarpc.com](https://llamarpc.com), [Ankr](https://www.ankr.com/), 或付费: [Infura](https://infura.io), [Alchemy](https://www.alchemy.com))
 
 ### 安装和设置

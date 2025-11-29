@@ -1,0 +1,3 @@
+[toolchain]
+channel = "stable" # 使用一个稳定的、具体的版本
+components = ["rustfmt", "clippy"] # 确保这些组件被安装
