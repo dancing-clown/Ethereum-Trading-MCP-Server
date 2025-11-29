@@ -10,7 +10,7 @@ type Writer = OwnedWriteHalf;
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
     println!("╔═══════════════════════════════════════════════════════╗");
-    println!("║   Ethereum Trading MCP Server - Test Client v1.0     ║");
+    println!("║   Ethereum Trading MCP Server - MCP Client v1.0       ║");
     println!("╚═══════════════════════════════════════════════════════╝\n");
 
     // Connect to server
@@ -26,13 +26,14 @@ async fn main() -> eyre::Result<()> {
     let mut client = TestClient::new(reader, writer);
 
     loop {
-        println!("\n╔═══════════════════════════════════════════════════════╗");
-        println!("║ Available Commands:                                  ║");
-        println!("║ 1. get_balance    - Query wallet balance            ║");
-        println!("║ 2. get_token_price - Get token price in USD/ETH    ║");
-        println!("║ 3. swap_tokens    - Simulate a token swap          ║");
-        println!("║ 4. tools/list     - List available tools           ║");
-        println!("║ 5. exit           - Close connection               ║");
+        println!();
+        println!("╔═══════════════════════════════════════════════════════╗");
+        println!("║ Available Commands:                                   ║");
+        println!("║ 1. get_balance      - Query wallet balance            ║");
+        println!("║ 2. get_token_price  - Get token price in USD/ETH      ║");
+        println!("║ 3. swap_tokens      - Simulate a token swap           ║");
+        println!("║ 4. tools/list       - List available tools            ║");
+        println!("║ 5. exit             - Close connection                ║");
         println!("╚═══════════════════════════════════════════════════════╝");
         print!("\nEnter command number (1-5): ");
         io::stdout().flush()?;
@@ -102,10 +103,7 @@ impl TestClient {
 
             if let Some(error) = response.get("error") {
                 if !error.is_null() {
-                    println!(
-                        "\n⚠️  Error: {}",
-                        error.get("message").unwrap_or(&Value::Null)
-                    );
+                    println!("\nError: {}", error.get("message").unwrap_or(&Value::Null));
                 }
             }
         }
@@ -115,17 +113,18 @@ impl TestClient {
     }
 
     async fn get_balance(&mut self) -> eyre::Result<()> {
-        println!("\n╔═══════════════════════════════════════════════════════╗");
-        println!("║ Get Balance Tool                                     ║");
+        println!();
+        println!("╔═══════════════════════════════════════════════════════╗");
+        println!("║ Get Balance Tool                                      ║");
         println!("╚═══════════════════════════════════════════════════════╝");
 
-        print!("\nEnter Ethereum address (0x...): ");
+        print!("\nEnter Wallet address (0x...):");
         io::stdout().flush()?;
         let mut address = String::new();
         io::stdin().read_line(&mut address)?;
         let address = address.trim().to_string();
 
-        print!("Enter token address (press Enter for ETH): ");
+        print!("Enter token address or token symbol (press Enter for ETH):");
         io::stdout().flush()?;
         let mut token_addr = String::new();
         io::stdin().read_line(&mut token_addr)?;
@@ -155,15 +154,21 @@ impl TestClient {
     }
 
     async fn get_token_price(&mut self) -> eyre::Result<()> {
-        println!("\n╔═══════════════════════════════════════════════════════╗");
-        println!("║ Get Token Price Tool                                 ║");
+        println!();
+        println!("╔═══════════════════════════════════════════════════════╗");
+        println!("║ Get Token Price Tool                                  ║");
         println!("╚═══════════════════════════════════════════════════════╝");
 
-        print!("\nEnter token symbol or address (e.g., ETH, USDC): ");
+        print!("\nEnter token symbol or address (e.g., USDC, DAI): ");
         io::stdout().flush()?;
         let mut token = String::new();
         io::stdin().read_line(&mut token)?;
         let token = token.trim().to_string();
+        print!("\nEnter quote currency (e.g., ETH): ");
+        io::stdout().flush()?;
+        let mut quote = String::new();
+        io::stdin().read_line(&mut quote)?;
+        let quote = quote.trim().to_string();
 
         let request = json!({
             "jsonrpc": "2.0",
@@ -171,7 +176,8 @@ impl TestClient {
             "params": {
                 "name": "get_token_price",
                 "arguments": {
-                    "token_identifier": token
+                    "token_identifier": token,
+                    "quote_currency": quote
                 }
             },
             "id": self.request_id
@@ -182,8 +188,9 @@ impl TestClient {
     }
 
     async fn swap_tokens(&mut self) -> eyre::Result<()> {
-        println!("\n╔═══════════════════════════════════════════════════════╗");
-        println!("║ Swap Tokens Tool (Simulation Only)                   ║");
+        println!();
+        println!("╔═══════════════════════════════════════════════════════╗");
+        println!("║ Swap Tokens Tool (Simulation Only)                    ║");
         println!("╚═══════════════════════════════════════════════════════╝");
 
         print!("\nEnter source token (e.g., ETH): ");
@@ -237,8 +244,9 @@ impl TestClient {
     }
 
     async fn list_tools(&mut self) -> eyre::Result<()> {
-        println!("\n╔═══════════════════════════════════════════════════════╗");
-        println!("║ Listing Available Tools                              ║");
+        println!();
+        println!("╔═══════════════════════════════════════════════════════╗");
+        println!("║ Listing Available Tools                               ║");
         println!("╚═══════════════════════════════════════════════════════╝");
 
         let request = json!({

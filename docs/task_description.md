@@ -92,6 +92,10 @@ plaintext
 → 记录日志 → 处理异常 → 返回响应。
 总结：这个作业的核心是「用 Rust 落地以太坊链上工具的异步服务器」，既要懂以太坊底层（合约、交易、RPC），也要懂 Rust 异步工程化，还要符合 MCP 协议规范，最终实现「安全、精准、可模拟」的以太坊交易工具。
 
+## 其他测试验证工具
+
+[etherscan](https://etherscan.io)用于确认查询是否符合预期。
+
 使用的alloy的AI提示词如下:
 
 ```markdown
@@ -224,9 +228,9 @@ let tx = TransactionRequest::default()
 // Send and wait for confirmation
 let receipt = provider.send_transaction(tx).await?.get_receipt().await?;
 ```
- 
+
 ### Contract Interactions with sol!
- 
+
 ```rust
 use alloy::sol;
  

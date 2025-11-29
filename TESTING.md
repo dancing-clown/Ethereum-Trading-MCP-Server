@@ -26,11 +26,21 @@ cargo run --release --bin mcp-client
 
 ```bash
 ╔═══════════════════════════════════════════════════════╗
-║   Ethereum Trading MCP Server - Test Client v1.0     ║
+║   Ethereum Trading MCP Server - MCP Client v1.0       ║
 ╚═══════════════════════════════════════════════════════╝
 
 Connecting to server at 127.0.0.1:8080...
 ✓ Connected successfully!
+
+
+╔═══════════════════════════════════════════════════════╗
+║ Available Commands:                                   ║
+║ 1. get_balance      - Query wallet balance            ║
+║ 2. get_token_price  - Get token price in USD/ETH      ║
+║ 3. swap_tokens      - Simulate a token swap           ║
+║ 4. tools/list       - List available tools            ║
+║ 5. exit             - Close connection                ║
+╚═══════════════════════════════════════════════════════╝
 ```
 
 ## 可用命令
@@ -48,8 +58,8 @@ Connecting to server at 127.0.0.1:8080...
 **示例：**
 
 ```bash
-Enter Ethereum address (0x...): 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
-Enter token address (press Enter for ETH):
+Enter Wallet address (0x...): 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+Enter token address or token symbol (press Enter for ETH):
 ```
 
 **预期响应：**
@@ -110,12 +120,13 @@ Enter token symbol or address (e.g., ETH, USDC): ETH
 6. 输入钱包地址
 
 **示例：**
-```
+
+```bash
 Enter source token (e.g., ETH): ETH
 Enter destination token (e.g., USDC): USDC
-Enter amount to swap: 1
+Enter amount to swap: 0.006
 Enter slippage tolerance (e.g., 0.5 for 0.5%): 0.5
-Enter wallet address (0x...): 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+Enter wallet address (0x...): 0x4838B106FCe9647Bdf1E7877BF73cE8B0BAD5f97
 ```
 
 **预期响应：**
@@ -124,17 +135,16 @@ Enter wallet address (0x...): 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
 {
   "jsonrpc": "2.0",
   "result": {
+    "error": null,
+    "estimated_output": "17.980902",
     "from_token": "ETH",
-    "to_token": "USDC",
-    "input_amount": "1",
-    "estimated_output": "2475",
-    "min_output": "2462.0625",
-    "gas_cost_eth": "0.003",
-    "slippage_percentage": "0.5",
+    "gas_cost_eth": "0.00000582641835",
+    "input_amount": "0.006",
+    "min_output": "17.89099749",
     "simulation_success": true,
-    "error": null
-  },
-  "id": 3
+    "slippage_percentage": "0.5",
+    "to_token": "USDC"
+  }
 }
 ```
 

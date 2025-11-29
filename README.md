@@ -21,52 +21,70 @@
 
 ### 安装和设置
 
-1. **克隆和构建**:
-   ```bash
-   git clone https://github.com/your-repo/ethereum-trading-mcp-server.git
-   cd ethereum-trading-mcp-server
-   cargo build --release
-   ```
+1. **克隆和构建**
 
-2. **配置环境**:
-   ```bash
-   cp .env.example .env
-   # 编辑 .env 并设置你的 RPC_URL
-   # 示例（使用公共端点）:
-   # RPC_URL=https://eth.llamarpc.com
-   ```
+```bash
+git clone https://github.com/your-repo/ethereum-trading-mcp-server.git
+cd ethereum-trading-mcp-server
+cargo build --release
+```
+
+2. **配置环境**
+
+```bash
+cp .env.example .env
+# 编辑 .env 并设置你的 RPC_URL
+# 示例（使用公共端点）:
+# RPC_URL=https://eth.llamarpc.com
+```
 
 3. **运行服务器**:
-   ```bash
-   cargo run --release
-   # 服务器将在 127.0.0.1:8080 启动
-   ```
+
+```bash
+cargo run --bin ethereum-mcp-server --release
+# 服务器将在 127.0.0.1:8080 启动
+```
 
 4. **运行测试**:
-   ```bash
-   cargo test
-   # 所有 20 个单元测试通过
-   ```
+
+本地用例测试执行如下测试命令：
+
+```bash
+cargo test
+```
+
+生产测试见[生产测试](./TESTING.md)
 
 ## 架构
 
-```
-src/
-├── main.rs              # TCP 服务器入口点，处理 JSON-RPC 消息
-├── lib.rs               # 模块导出
-├── config.rs            # 环境变量配置
-├── error.rs             # 带有上下文的错误类型
-├── precision.rs         # 加密货币金额的十进制运算
-├── tokens.rs            # 代币符号 ↔ 地址映射注册表
-├── rpc/
-│   └── client.rs        # 使用 Alloy 的以太坊 RPC 客户端
-├── tools/
-│   ├── mod.rs
-│   ├── balance.rs       # get_balance 工具实现
-│   ├── price.rs         # get_token_price 工具实现
-│   └── swap.rs          # swap_tokens 工具实现
-└── server/
-    └── mcp.rs           # MCP 协议服务器（JSON-RPC 2.0）
+```shell
+.
+├── Cargo.toml           # 项目依赖和配置
+├── LICENSE              # MIT 许可证
+├── README.md            # 项目文档
+├── TESTING.md           # 生产测试文档
+├── docs/
+│   └── task_description.md  # 任务描述文档
+└── src/
+    ├── main.rs          # TCP 服务器入口点，处理 JSON-RPC 消息
+    ├── lib.rs           # 模块导出
+    ├── config.rs        # 环境变量配置
+    ├── error.rs         # 带有上下文的错误类型
+    ├── precision.rs     # 加密货币金额的十进制运算
+    ├── tokens.rs        # 代币符号 ↔ 地址映射注册表
+    ├── bin/
+    │   └── mcp_client.rs    # MCP 客户端测试工具
+    ├── rpc/
+    │   ├── mod.rs       # RPC 模块导出
+    │   └── client.rs    # 使用 Alloy 的以太坊 RPC 客户端
+    ├── tools/
+    │   ├── mod.rs       # 工具模块导出
+    │   ├── balance.rs   # get_balance 工具实现
+    │   ├── price.rs     # get_token_price 工具实现
+    │   └── swap.rs      # swap_tokens 工具实现
+    └── server/
+        ├── mod.rs       # 服务器模块导出
+        └── mcp.rs       # MCP 协议服务器（JSON-RPC 2.0）
 ```
 
 ## API 示例
@@ -127,9 +145,9 @@ src/
 
 ### 工具 2: get_token_price
 
-获取当前代币在 USD 和 ETH 中的价格。
+获取当前代币在 USD 和 ETH 中的价格（从 Uniswap V2 池实时获取）。
 
-**请求**:
+**请求** (获取 USDT 的 USD 价格):
 
 ```json
 {
@@ -138,7 +156,8 @@ src/
   "params": {
     "name": "get_token_price",
     "arguments": {
-      "token_identifier": "USDT"
+      "token_identifier": "USDT",
+      "quote_currency": "USD"
     }
   },
   "id": 3
@@ -151,13 +170,42 @@ src/
 {
   "jsonrpc": "2.0",
   "result": {
-    "token": "USDT",
-    "price_usd": "1.002",
-    "price_eth": "0.0004",
-    "timestamp": 1735689600,
-    "data_source": "Mock Oracle"
+    "quote_currency": "USD",
+    "price": "1.002",
+    "timestamp": 1735689600
   },
   "id": 3
+}
+```
+
+**请求** (获取 USDT 的 ETH 价格):
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "get_token_price",
+    "arguments": {
+      "token_identifier": "USDT",
+      "quote_currency": "ETH"
+    }
+  },
+  "id": 4
+}
+```
+
+**响应**:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "quote_currency": "ETH",
+    "price": "0.0004",
+    "timestamp": 1735689600
+  },
+  "id": 4
 }
 ```
 
@@ -181,7 +229,7 @@ src/
       "wallet_address": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
     }
   },
-  "id": 4
+  "id": 5
 }
 ```
 
@@ -201,7 +249,7 @@ src/
     "simulation_success": true,
     "error": null
   },
-  "id": 4
+  "id": 5
 }
 ```
 
@@ -218,27 +266,36 @@ src/
    - 所有金额通过 `decimals` 字段转换
    - 安全的往返转换（wei ↔ 可读格式）
 
-3. **模块化架构**: 清晰的分离：
+3. **从 Uniswap V2 池获取实时价格**:
+   - 查询 Uniswap V2 Factory 获取交易对地址
+   - 从 Pair 合约获取储备量（reserve0, reserve1）
+   - 计算价格: `price = reserve_quote / reserve_token`
+   - 支持 USD 和 ETH 两种报价货币
+   - 对于 USD: 先获取 token/WETH 价格，再乘以 WETH/USDC 价格
+
+4. **模块化架构**: 清晰的分离：
    - `rpc/`: RPC 操作（与工具隔离）
    - `tools/`: 业务逻辑（get_balance、定价、交换）
    - `server/`: MCP 协议（请求/响应处理）
    - `tokens/`: 代币注册表（符号 ↔ 地址查询）
 
-4. **通过 eth_call 实现安全模拟**:
+5. **通过 eth_call 实现安全模拟**:
    - 交换交易仅通过 `eth_call`（只读）模拟
    - 无签名或广播
    - 测试交易时零资产风险
 
-5. **使用 Tracing 进行结构化日志**:
+6. **使用 Tracing 进行结构化日志**:
    - 所有 RPC 调用、错误和操作都被记录
    - 帮助调试生产问题
    - 可与日志服务集成（ELK、DataDog 等）
 
 ## 已知限制和假设
 
-1. **价格数据**: 目前使用模拟/硬编码价格用于演示
-   - 生产环境: 集成 Uniswap 子图或 CoinGecko API
-   - 考虑速率限制和缓存策略
+1. **价格数据**: 从 Uniswap V2 池实时获取
+   - 通过查询 Uniswap V2 Factory 和 Pair 合约获取储备量
+   - 支持 USD 和 ETH 两种报价货币
+   - 对于 USD 价格: 先获取相对于 WETH 的价格，再乘以 ETH/USDC 价格
+   - 缓存策略: 可根据需要添加缓存层以提高性能
 
 2. **交换模拟**: 简化的模拟实现
    - 实际实现: 解码 Uniswap 池状态、应用公式、估算 Gas
@@ -253,9 +310,10 @@ src/
    - 配置用于主网（chain_id=1）
    - 多链支持需要动态提供程序选择
 
-5. **模拟代币注册表**:
-   - 仅预映射 ~10 个常见代币
+5. **代币注册表**:
+   - 预映射 ~10 个常见代币
    - 通过 `register()` 方法或外部源添加更多
+   - 支持通过地址直接查询代币信息
 
 ## 测试
 
@@ -279,7 +337,9 @@ RUST_LOG=debug cargo run
 ## 性能特征
 
 - **余额查询**: ~200-400ms（取决于网络）
-- **价格获取**: ~100-200ms（模拟预言机，真实 API 较慢）
+- **价格获取**: ~300-600ms（从 Uniswap V2 池实时获取，包括 Factory 和 Pair 查询）
+  - 单个池查询: ~150-200ms
+  - USD 价格（需要两个池查询）: ~300-400ms
 - **交换模拟**: ~300-600ms（包括 Gas 估算）
 - **并发请求**: 完整的异步支持（tokio）
 

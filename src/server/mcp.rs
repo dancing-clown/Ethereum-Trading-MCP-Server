@@ -210,6 +210,8 @@ impl McpServer {
             data: None,
         })?;
 
+        info!("处理工具调用: {} 带参数: {:?}", tool_name, arguments);
+
         match tool_name {
             "get_balance" => {
                 let request: BalanceRequest =

@@ -9,7 +9,7 @@ path = "src/main.rs"
 
 [[bin]]
 name = "mcp-client"
-path = "src/bin/client.rs"
+path = "src/bin/mcp_client.rs"
 
 [dependencies]
 # Core async runtime
@@ -47,11 +47,10 @@ chrono = { version = "0.4", features = ["serde"] }
 # URL parsing
 url = "2.5"
 
-# Futures for block_on
-futures = "0.3"
-
 [dev-dependencies]
 mockito = "1.6"
+# cargo test测试代码中使用block_on调用异步方法，需要隔离下
+futures = "0.3"
 
 [profile.release]
 opt-level = 3

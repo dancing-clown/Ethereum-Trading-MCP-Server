@@ -13,6 +13,7 @@ async fn main() -> eyre::Result<()> {
         .with_target(false)
         .with_thread_ids(false)
         .with_line_number(true)
+        .with_max_level(tracing::Level::DEBUG)
         .init();
 
     info!("启动以太坊交易 MCP 服务器...");
